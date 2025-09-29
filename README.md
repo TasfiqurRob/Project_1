@@ -1,0 +1,46 @@
+# Hallved Fashion Deals (Streamlit)
+
+A Streamlit dashboard backed by the Hallved Fashion Deals scraper. Browse high-discount menswear markdowns, filter by retailer, sort results, and paginate through cards.
+
+## Project Layout
+`	ext
+project-root/
++- README.md
++- pyproject.toml
++- .gitignore
++- src/
+   +- hallved_fashion_deals/
+      +- __init__.py
+      +- scraper.py
+      +- streamlit_app.py
+`
+
+## Getting Started
+1. **Create & activate a virtual environment (recommended):**
+   `powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate
+   `
+
+2. **Install the project in editable mode:**
+   `powershell
+   pip install -e .
+   `
+
+3. **Run the Streamlit app:**
+   `powershell
+   python -m streamlit run src/hallved_fashion_deals/streamlit_app.py
+   `
+   Streamlit will open a browser tab (default http://localhost:8501).
+
+## Features
+- Concurrent scraping of curated Shopify retailers (configurable in scraper.py).
+- Filter by retailer, sort by discount or price, and paginate through results.
+- At-a-glance metrics (item count, participating retailers, average discount).
+
+## Development Notes
+- Linting: python -m ruff check src
+- Tests are not included yet; add pytest as needed before production use.
+- Adjust retailer list or fetch limit in scraper.py to customize coverage.
+
+Happy deal hunting!

@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/hallved_fashion_deals/__init__.py
+src/hallved_fashion_deals/scraper.py
+src/hallved_fashion_deals/streamlit_app.py
+src/hallved_fashion_deals.egg-info/PKG-INFO
+src/hallved_fashion_deals.egg-info/SOURCES.txt
+src/hallved_fashion_deals.egg-info/dependency_links.txt
+src/hallved_fashion_deals.egg-info/requires.txt
+src/hallved_fashion_deals.egg-info/top_level.txt

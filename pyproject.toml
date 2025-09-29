@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=67"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hallved-fashion-deals"
+version = "0.1.0"
+description = "Streamlit dashboard for Hallved Fashion Deals."
+readme = "README.md"
+authors = [{ name = "Hallved" }]
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.33",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.13.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

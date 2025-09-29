@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+.venv/
+venv/
+
+# Streamlit
+.streamlit/
+
+# IDEs & tooling
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs & reports
+*.log
+
+# Ruff / lint caches
+.ruff_cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+frontend/node_modules/
+frontend/dist/
+
