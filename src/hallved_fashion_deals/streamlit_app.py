@@ -1,9 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime
 from html import escape
 from statistics import mean
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Union
 
 import streamlit as st
 
@@ -12,11 +12,11 @@ from hallved_fashion_deals.scraper import DEFAULT_SITES, Product, SiteConfig, sc
 st.set_page_config(page_title="Hallved Fashion Deals", page_icon="???", layout="wide")
 
 BRAND_COLORS: Dict[str, str] = {
-    "primary": "#1d4ed8",
-    "primary_dark": "#1e3a8a",
-    "muted": "#64748b",
-    "background": "#f8fafc",
-    "card": "#ffffff",
+    "primary": "#00AFB9",
+    "primary_dark": "#0081A7",
+    "muted": "#F07167",
+    "background": "#FDFCDC",
+    "card": "#FED9B7",
 }
 
 CUSTOM_CSS = f"""
@@ -27,7 +27,7 @@ CUSTOM_CSS = f"""
 
 [data-testid="stAppViewContainer"] {{
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: linear-gradient(180deg, {BRAND_COLORS['background']} 0%, #eef2ff 100%);
+    background: linear-gradient(180deg, {BRAND_COLORS['background']} 0%, {BRAND_COLORS['card']} 100%);
     color: #0f172a;
 }}
 
@@ -40,7 +40,7 @@ CUSTOM_CSS = f"""
     color: #fff;
     padding: 2.5rem 3rem;
     border-radius: 1.5rem;
-    box-shadow: 0 20px 35px rgba(29, 78, 216, 0.25);
+    box-shadow: 0 20px 35px rgba(0, 175, 185, 0.25);
     margin-bottom: 2.5rem;
 }}
 
@@ -135,35 +135,89 @@ CUSTOM_CSS = f"""
     gap: 0.4rem;
     padding: 0.55rem 0.9rem;
     border-radius: 0.75rem;
-    background: rgba(29, 78, 216, 0.12);
+    background: rgba(0, 175, 185, 0.12);
     color: {BRAND_COLORS['primary_dark']};
     font-weight: 600;
     text-decoration: none;
 }}
 
-.pagination-bar {{
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid rgba(15, 23, 42, 0.08);
-    display: flex;
-    flex-wrap: wrap;
+.pagination-wrapper {{
+    margin-top: 2rem;
+}}
+
+.pagination-status {{
+    text-align: center;
+    color: {BRAND_COLORS['muted']};
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+}}
+
+.pagination-chip {{
+    display: inline-flex;
     align-items: center;
-    gap: 1rem;
-    justify-content: space-between;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #0f172a;
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.55);
 }}
 
-.pagination-buttons button {{
-    border-radius: 0.8rem;
-    border: 1px solid rgba(15, 23, 42, 0.15);
-    padding: 0.55rem 1rem;
-    background: #fff;
-    color: #1f2937;
-}}
-
-.pagination-buttons button[data-active="true"] {{
+.pagination-chip--active {{
     background: {BRAND_COLORS['primary']};
-    border-color: {BRAND_COLORS['primary']};
-    color: #fff;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(0, 175, 185, 0.25);
+}}
+
+.pagination-chip--ellipsis {{
+    background: transparent;
+    box-shadow: none;
+    color: {BRAND_COLORS['muted']};
+    min-width: unset;
+    padding: 0 0.4rem;
+}}
+
+div[data-testid="baseButton-secondary"] > button {{
+    border-radius: 999px;
+    border: 1px solid rgba(15, 23, 42, 0.14);
+    padding: 0.5rem 0.9rem;
+    background: #ffffff;
+    color: #1f2937;
+    font-weight: 600;
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+}}
+
+div[data-testid="baseButton-secondary"] > button:hover:not(:disabled) {{
+    border-color: rgba(0, 175, 185, 0.45);
+    color: {BRAND_COLORS['primary_dark']};
+    background: rgba(0, 175, 185, 0.08);
+}}
+
+div[data-testid="baseButton-secondary"] > button:disabled {{
+    opacity: 0.4;
+    box-shadow: none;
+    color: rgba(15, 23, 42, 0.5);
+}}
+
+.pagination-jump {{
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    color: {BRAND_COLORS['muted']};
+    font-size: 0.9rem;
+}}
+
+.pagination-jump input[type="number"] {{
+    width: 5rem;
+    text-align: center;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(15, 23, 42, 0.2);
+    padding: 0.35rem 0.5rem;
 }}
 </style>
 """
@@ -205,7 +259,7 @@ def format_currency(value: object) -> str:
     try:
         numeric = float(value)
     except (TypeError, ValueError):
-        return "—"
+        return "-"
     return f"${numeric:,.2f}"
 
 
@@ -215,8 +269,107 @@ def format_percent(value: object) -> str:
     try:
         numeric = float(value)
     except (TypeError, ValueError):
-        return "—"
+        return "-"
     return f"{numeric:.2f}%"
+
+
+
+def build_pagination_sequence(current_page: int, total_pages: int, window: int = 2) -> List[Union[int, str]]:
+    if total_pages <= 1:
+        return [1]
+    pages = {1, total_pages, current_page}
+    for offset in range(-window, window + 1):
+        candidate = current_page + offset
+        if 1 <= candidate <= total_pages:
+            pages.add(candidate)
+    ordered = sorted(pages)
+    sequence: List[Union[int, str]] = []
+    previous = None
+    for page in ordered:
+        if previous is not None and page - previous > 1:
+            sequence.append('ellipsis')
+        sequence.append(page)
+        previous = page
+    return sequence
+
+
+def render_pagination(current_page: int, total_pages: int) -> None:
+    if total_pages <= 1:
+        return
+
+    st.markdown(
+        f"<div class='pagination-wrapper'><div class='pagination-status'>Page {current_page} of {total_pages}</div></div>",
+        unsafe_allow_html=True,
+    )
+
+    sequence = build_pagination_sequence(current_page, total_pages)
+
+    elements: List[dict[str, Union[int, str, bool]]] = [
+        {'type': 'control', 'name': 'first', 'label': '<<', 'disabled': current_page == 1, 'target': 1},
+        {'type': 'control', 'name': 'prev', 'label': '<', 'disabled': current_page == 1, 'target': max(1, current_page - 1)},
+    ]
+
+    for item in sequence:
+        if isinstance(item, int):
+            elements.append({'type': 'page', 'page': item})
+        else:
+            elements.append({'type': 'ellipsis'})
+
+    elements.extend(
+        [
+            {'type': 'control', 'name': 'next', 'label': '>', 'disabled': current_page >= total_pages, 'target': min(total_pages, current_page + 1)},
+            {'type': 'control', 'name': 'last', 'label': '>>', 'disabled': current_page >= total_pages, 'target': total_pages},
+        ]
+    )
+
+    outer_cols = st.columns([1, 6, 1])
+    with outer_cols[1]:
+        cols = st.columns(len(elements))
+        for column, element in zip(cols, elements):
+            with column:
+                if element['type'] == 'ellipsis':
+                    st.markdown("<div class='pagination-chip pagination-chip--ellipsis'>&hellip;</div>", unsafe_allow_html=True)
+                elif element['type'] == 'page':
+                    page_num = int(element['page'])
+                    if page_num == current_page:
+                        st.markdown(
+                            f"<div class='pagination-chip pagination-chip--active'>{page_num}</div>",
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        if st.button(
+                            str(page_num),
+                            key=f'pagination_page_{page_num}',
+                            type='secondary',
+                            use_container_width=True,
+                        ):
+                            st.session_state['page_number'] = page_num
+                            trigger_rerun()
+                else:
+                    if st.button(
+                        element['label'],
+                        key=f"pagination_{element['name']}",
+                        disabled=bool(element['disabled']),
+                        type='secondary',
+                        use_container_width=True,
+                    ):
+                        st.session_state['page_number'] = int(element['target'])
+                        trigger_rerun()
+
+    jump_cols = st.columns([3, 2, 3])
+    with jump_cols[1]:
+        jump_value = st.number_input(
+            'Jump to page',
+            min_value=1,
+            max_value=total_pages,
+            value=current_page,
+            step=1,
+            format='%d',
+        )
+        if int(jump_value) != current_page:
+            st.session_state['page_number'] = int(jump_value)
+            trigger_rerun()
+
 
 
 def run_scrape(site_names: Sequence[str]) -> List[Product]:
@@ -254,7 +407,7 @@ with st.sidebar:
 
     if st.button("Refresh deals", type="primary", use_container_width=True):
         if selected_sites:
-            with st.spinner("Fetching latest deals…"):
+            with st.spinner("Fetching latest deals..."):
                 st.session_state["results"] = run_scrape(selected_sites)
                 st.session_state["last_updated"] = datetime.utcnow()
                 st.session_state["page_number"] = 1
@@ -344,6 +497,11 @@ for row_start in range(0, len(page_results), 3):
         image_html = (
             f'<img src="{escape(str(image_url))}" alt="{title}">' if image_url else ""
         )
+        link_section = (
+            f'<a class="deal-link" href="{escape(str(link))}" target="_blank" rel="noreferrer">View product &rarr;</a>'
+            if link
+            else '<p class="deal-meta">No product link available</p>'
+        )
 
         card_html = f"""
         <div class="deal-card">
@@ -356,47 +514,12 @@ for row_start in range(0, len(page_results), 3):
                     <span>was {old_price}</span>
                 </div>
                 <p class="deal-meta">Discount: {discount}</p>
-                {f'<a class="deal-link" href="{escape(str(link))}" target="_blank" rel="noreferrer">View product ?</a>' if link else '<p class="deal-meta">No product link available</p>'}
+                {link_section}
             </div>
         </div>
         """
         column.markdown(card_html, unsafe_allow_html=True)
 
-with st.container():
-    prev_disabled = current_page == 1
-    next_disabled = current_page >= total_pages
-
-    pagination_cols = st.columns([1, 1, 2, 1, 1])
-    with pagination_cols[1]:
-        if st.button("? Prev", disabled=prev_disabled, key="prev_page"):
-            st.session_state["page_number"] = max(1, current_page - 1)
-            trigger_rerun()
-
-    with pagination_cols[2]:
-        st.markdown(
-            f"<div class='pagination-bar'>Page {current_page} of {total_pages}</div>",
-            unsafe_allow_html=True,
-        )
-
-    with pagination_cols[3]:
-        if st.button("Next ?", disabled=next_disabled, key="next_page"):
-            st.session_state["page_number"] = min(total_pages, current_page + 1)
-            trigger_rerun()
-
-    with pagination_cols[0]:
-        pass
-    with pagination_cols[4]:
-        pass
-
-page_selector = st.slider(
-    "Jump to page",
-    min_value=1,
-    max_value=total_pages,
-    value=current_page,
-)
-if page_selector != current_page:
-    st.session_state["page_number"] = page_selector
-    trigger_rerun()
-
+render_pagination(current_page, total_pages)
 
 
